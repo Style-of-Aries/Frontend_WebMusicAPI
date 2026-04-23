@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* slider */
+.slider {
+  -webkit-appearance: none;
+  height: 4px;
+  background: #22c55e;
+  border-radius: 999px;
+}
+
+/* thumb */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* hover mới hiện */
+.slider:hover::-webkit-slider-thumb {
+  opacity: 1;
+}

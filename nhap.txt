@@ -1,0 +1,439 @@
+import { useState, useRef, useEffect } from "react";
+import {
+  FaPlay,
+  FaPause,
+  FaBackwardStep,
+  FaForwardStep,
+  FaRepeat,
+  FaShuffle,
+  FaVolumeHigh,
+  FaVolumeXmark,
+} from "react-icons/fa6";
+import Sidebar from "./components/Sidebar";
+import usePlayer from "./hooks/usePlayer";
+import { getSongs } from "./services/songService";
+function App() {
+  const audioRef = useRef(null);
+
+  const [songs, setSongs] = useState([]);
+  const [search, setSearch] = useState("");
+  const [currentSong, setCurrentSong] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [oldVolume, setOldVolume] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isRepeating, setIsRepeating] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const formatTime = (t) => {
+    if (!t) return "0:00";
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+  const filteredSongs = songs.filter((song) =>
+    song.name.toLowerCase().includes(search.toLowerCase()),
+  );
+  const handleSelectSong = (song, index) => {
+    setCurrentSong(song);
+    setCurrentIndex(index);
+    console.log("Selected song: " + song.fileSong);
+    if (audioRef.current) {
+      audioRef.current.src = song.fileSong;
+      audioRef.current.volume = volume;
+      audioRef.current.play();
+    }
+
+    setIsPlaying(true);
+  };
+
+  const toggleRepeat = () => {
+    setIsRepeating(!isRepeating);
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) audioRef.current.pause();
+    else audioRef.current.play();
+
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isMuted) {
+      // 🔊 bật lại volume cũ
+      audio.volume = oldVolume;
+      setVolume(oldVolume);
+      setIsMuted(false);
+    } else {
+      // 🔇 lưu volume hiện tại rồi mute
+      setOldVolume(volume);
+      audio.volume = 0;
+      setVolume(0);
+      setIsMuted(true);
+    }
+  };
+
+  const getRandomIndex = () => {
+    let rand;
+    do {
+      rand = Math.floor(Math.random() * songs.length);
+    } while (rand === currentIndex);
+
+    return rand;
+  };
+  const nextSong = () => {
+    if (isShuffle) {
+      let randomIndex = getRandomIndex();
+      handleSelectSong(songs[randomIndex], randomIndex);
+      return;
+    }
+    let next = currentIndex + 1;
+    if (next >= songs.length) next = 0;
+    handleSelectSong(songs[next], next);
+  };
+
+  const prevSong = () => {
+    if (isShuffle) {
+      let randomIndex = getRandomIndex();
+      handleSelectSong(songs[randomIndex], randomIndex);
+      return;
+    }
+    let prev = currentIndex - 1;
+    if (prev < 0) prev = songs.length - 1;
+    handleSelectSong(songs[prev], prev);
+  };
+
+  const handleVolume = (e) => {
+    const value = Number(e.target.value);
+
+    setVolume(value);
+
+    if (audioRef.current) {
+      audioRef.current.volume = value;
+    }
+
+    // 🔇 nếu volume = 0 => mute
+    if (value === 0) {
+      setIsMuted(true);
+    }
+    // 🔊 nếu volume > 0 => unmute
+    else {
+      setIsMuted(false);
+      setOldVolume(value);
+    }
+  };
+
+  useEffect(
+    () => {
+      fetch("http://localhost/WebMusic/api/getSongs.php")
+        .then((res) => res.json())
+        .then((data) => setSongs(data));
+      // console.log("Loaded songs: ", songs.length);
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.ontimeupdate = () => {
+        setCurrentTime(audio.currentTime);
+      };
+
+      audio.onloadedmetadata = () => {
+        setDuration(audio.duration);
+      };
+
+      audio.onended = () => {
+        if (isRepeating) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+          return;
+        }
+        if (isShuffle) {
+          let randomIndex = getRandomIndex();
+          handleSelectSong(songs[randomIndex], randomIndex);
+          return;
+        }
+        let next = currentIndex + 1;
+        if (next >= songs.length) next = 0;
+        handleSelectSong(songs[next], next);
+      };
+
+      console.log("isRepeating: " + isRepeating);
+      console.log("isShuffle: " + isShuffle);
+      console.log("currentIndex: " + currentIndex);
+      return () => {
+        audio.ontimeupdate = null;
+        audio.onloadedmetadata = null;
+        audio.onended = null;
+      };
+    },
+    [currentIndex],
+    [isRepeating],
+    [isShuffle],
+  );
+
+  return (
+    <div className="flex h-screen bg-black text-white">
+      {/* SIDEBAR */}
+      <div className="w-80 bg-zinc-900 p-4 overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">🎵 Playlist</h2>
+        <div className="relative w-full">
+          <input
+            className="w-full pl-10 pr-4 py-2 rounded-full bg-zinc-800 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
+            placeholder="Tìm bài hát..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+            🔍
+          </span>
+        </div>
+        <div className="space-y-2">
+          {filteredSongs.map((song, index) => (
+            <div
+              key={song.id}
+              onClick={() => handleSelectSong(song, index)}
+              className={`p-3 rounded-lg cursor-pointer transition
+                hover:bg-zinc-700
+                ${currentSong?.id === song.id ? "bg-zinc-700 text-green-400" : ""}`}
+            >
+              🎧 {song.name}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div className="flex-1 flex flex-col justify-center items-center p-10">
+        <h1 className="text-3xl font-bold mb-6">🎧 Spotify Clone</h1>
+
+        {currentSong ? (
+          <div className="w-full max-w-xl text-center">
+            <img
+              src={currentSong.image}
+              className={`w-100 h-100 mx-auto rounded-full object-cover border-4 border-zinc-300 transition-all duration-300 ${
+                isPlaying ? "animate-spin [animation-duration:8s]" : ""
+              }`}
+            />
+            <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text truncate">
+              {currentSong.name}
+            </h2>
+
+            <p className="text-sm text-zinc-400 truncate">
+              {currentSong.artist}
+            </p>
+
+            {/* PROGRESS */}
+            <input
+              type="range"
+              min="0"
+              max={duration || 0}
+              value={currentTime || 0}
+              onChange={(e) => {
+                audioRef.current.currentTime = e.target.value;
+              }}
+              className="w-full h-1 accent-green-500 cursor-pointer"
+            />
+
+            {/* TIME */}
+            <div className="flex justify-between text-sm text-gray-400 mt-2">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+
+            {/* CONTROLS */}
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <button
+                onClick={toggleRepeat}
+                className="px-4 py-2 hover:text-gray-400"
+              >
+                {isRepeating ? (
+                  <FaRepeat className="text-green-500" />
+                ) : (
+                  <FaRepeat />
+                )}
+              </button>
+              <button
+                onClick={prevSong}
+                className="px-4 py-2 hover:text-gray-400"
+              >
+                <FaBackwardStep />
+              </button>
+
+              <button
+                onClick={togglePlay}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 text-black shadow-lg hover:scale-110 active:scale-95 transition"
+              >
+                {isPlaying ? <FaPause /> : <FaPlay />}
+              </button>
+
+              <button
+                onClick={nextSong}
+                className="px-4 py-2 hover:text-gray-400"
+              >
+                <FaForwardStep />
+              </button>
+              <button
+                onClick={() => setIsShuffle(!isShuffle)}
+                className="px-4 py-2 hover:text-gray-400"
+              >
+                {isShuffle ? (
+                  <FaShuffle className="text-green-500" />
+                ) : (
+                  <FaShuffle />
+                )}
+              </button>
+            </div>
+
+            {/* VOLUME */}
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={toggleMute}
+                className="px-3 py-2 hover:text-gray-400"
+              >
+                {isMuted ? <FaVolumeXmark /> : <FaVolumeHigh />}
+              </button>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolume}
+                className="w-40 accent-green-500"
+              />
+            </div>
+          </div>
+        ) : (
+          <h2 className="text-gray-400">Chọn bài hát để phát 🎵</h2>
+        )}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/80 backdrop-blur-lg border-t border-white/10 px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* LEFT: Song info */}
+            <div className="w-1/3 overflow-hidden">
+              {currentSong ? (
+                <div className="flex justify-start items-center gap-4">
+                  <img
+                    src={currentSong.image}
+                    className={`w-20 h-20 rounded-full object-cover border-4 border-zinc-300 transition-all duration-300 ${
+                      isPlaying ? "animate-spin [animation-duration:8s]" : ""
+                    }`}
+                  />
+                  <div>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 text-transparent bg-clip-text truncate">
+                      {currentSong.name}
+                    </h2>
+
+                    <p className="text-sm text-zinc-400 truncate">
+                      {currentSong.artist}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-gray-400 text-sm">Chọn bài hát 🎵</h2>
+              )}
+            </div>
+
+            {/* CENTER: Controls */}
+            <div className="w-1/3 items-center flex flex-col justify-center">
+              <div className="flex items-center justify-center gap-5 ">
+                <button
+                  onClick={toggleRepeat}
+                  className="text-gray-300 hover:text-white transition"
+                >
+                  {isRepeating ? (
+                    <FaRepeat className="text-green-500" />
+                  ) : (
+                    <FaRepeat />
+                  )}
+                </button>
+
+                <button
+                  onClick={prevSong}
+                  className="text-gray-300 hover:text-white transition"
+                >
+                  <FaBackwardStep size={18} />
+                </button>
+
+                <button
+                  onClick={togglePlay}
+                  className="w-11 h-11 flex items-center justify-center rounded-full bg-green-500 text-black shadow-lg hover:scale-110 active:scale-95 transition"
+                >
+                  {isPlaying ? <FaPause /> : <FaPlay />}
+                </button>
+
+                <button
+                  onClick={nextSong}
+                  className="text-gray-300 hover:text-white transition"
+                >
+                  <FaForwardStep size={18} />
+                </button>
+
+                <button
+                  onClick={() => setIsShuffle(!isShuffle)}
+                  className="text-gray-300 hover:text-white transition"
+                >
+                  {isShuffle ? (
+                    <FaShuffle className="text-green-500" />
+                  ) : (
+                    <FaShuffle />
+                  )}
+                </button>
+              </div>
+              {currentSong && (
+                <div className="w-full flex items-center gap-2">
+                  <span className="text-sm">{formatTime(currentTime)}</span>
+              
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 0}
+                    value={currentTime || 0}
+                    onChange={(e) => {
+                      audioRef.current.currentTime = Number(e.target.value);
+                    }}
+                    className="w-full h-1 accent-green-500 cursor-pointer"
+                  />
+                  <span className="text-sm">{formatTime(duration)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT: future (volume / time / like...) */}
+            <div className="w-1/3 flex justify-end">
+              {/* để trống sau này */}
+              <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={toggleMute}
+                className="px-3 py-2 hover:text-gray-400"
+              >
+                {isMuted ? <FaVolumeXmark /> : <FaVolumeHigh />}
+              </button>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolume}
+                className="w-40 accent-green-500"
+              />
+            </div>
+            </div>
+          </div>
+        </div>
+        <audio ref={audioRef} />
+      </div>
+    </div>
+  );
+}
+
+export default App;
