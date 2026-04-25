@@ -43,6 +43,9 @@ export default function Home({ openLogin }) {
           onSelect={player.handleSelectSong}
           currentSong={player.currentSong}
           formatTime={formatTime}
+          onDelete={player.handleDelete}
+          deletingId={player.deletingId}
+          handleReloadSongs={player.handleReloadSongs}
         />
       </div>
 

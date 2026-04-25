@@ -1,5 +1,5 @@
 import { createContext, useRef, useState, useEffect } from "react";
-import { getSongs } from "../api";
+import { getSongs, deleteSong } from "../api";
 export const PlayerContext = createContext(null);
 
 export function PlayerProvider({ children }) {
@@ -18,7 +18,7 @@ export function PlayerProvider({ children }) {
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-
+  const [deletingId, setDeletingId] = useState(null);
   const [isRepeating, setIsRepeating] = useState(false);
   const [isShuffle, setIsShuffle] = useState(false);
 
@@ -120,6 +120,29 @@ export function PlayerProvider({ children }) {
     audioRef.current.currentTime = time;
   };
 
+  const handleDelete = async (id) => {
+    const isConfirm = window.confirm("Bạn có chắc muốn xóa bài hát này không?");
+    if (!isConfirm) return;
+    try {
+      setDeletingId(id);
+      await deleteSong(id);
+      setSongs((prev) => prev.filter((song) => song.id !== id));
+      if (currentSong?.id === id) {
+        nextSong(); // hoặc stop
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleReloadSongs = async () => {
+    const res = await getSongs();
+    setSongs(res.data.data);
+    console.log("Loaded songs:", res.data.data);
+  };
+
   useEffect(() => {
     const loadSongs = async () => {
       try {
@@ -137,7 +160,8 @@ export function PlayerProvider({ children }) {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
+    console.log("currentIndex: " + currentIndex);
+    console.log("Bài hát: " + songs[currentIndex]?.title);
     audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
     audio.onloadedmetadata = () => setDuration(audio.duration);
 
@@ -146,10 +170,12 @@ export function PlayerProvider({ children }) {
         audio.currentTime = 0;
         audio.play();
       } else {
+        // console.log("file_path: " + songs.file_path);
+        // console.log("currentIndex: " + currentIndex);
         nextSong();
       }
     };
-  }, [currentIndex, isRepeating, isShuffle]);
+  }, [songs, currentIndex, isRepeating, isShuffle]);
 
   return (
     <PlayerContext.Provider
@@ -166,6 +192,7 @@ export function PlayerProvider({ children }) {
         volume,
         isRepeating,
         isShuffle,
+        deletingId,
 
         // actions
         handleSelectSong,
@@ -178,7 +205,8 @@ export function PlayerProvider({ children }) {
         setIsShuffle,
         seek,
         formatTime,
-
+        handleReloadSongs,
+        handleDelete,
         audioRef,
       }}
     >
