@@ -8,7 +8,7 @@ export default function VolumeControl({
 }) {
   return (
     <div className="flex items-center justify-center">
-      <button onClick={onToggleMute} className="px-3 py-2 hover:text-gray-400">
+      <button onClick={onToggleMute} className="text-white px-3 py-2 hover:text-gray-400">
         {isMuted ? <FaVolumeXmark /> : <FaVolumeHigh />}
       </button>
 

@@ -20,9 +20,9 @@ export default function Player({
 
   return (
     <div className="text-center">
-      <img src={currentSong.image} className="w-60 mx-auto rounded-full" />
+      <img src={currentSong.fileImage} className="w-60 mx-auto rounded-full" />
 
-      <h2>{currentSong.name}</h2>
+      <h2>{currentSong.title}</h2>
 
       <ProgressBar
         currentTime={currentTime}

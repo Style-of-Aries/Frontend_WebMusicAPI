@@ -25,3 +25,30 @@
 .slider:hover::-webkit-slider-thumb {
   opacity: 1;
 }
+
+/* Áp dụng cho toàn bộ dự án */
+* {
+  scrollbar-width: thin; /* Cho Firefox */
+  scrollbar-color: #3f3f46 #18181b; /* Màu thanh cuộn và màu nền */
+}
+
+/* Áp dụng cho Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+  width: 8px; /* Độ dày thanh cuộn dọc */
+  height: 8px; /* Độ dày thanh cuộn ngang */
+}
+
+*::-webkit-scrollbar-track {
+  background: #18181b; /* Màu nền của thanh cuộn (zinc-900) */
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #3f3f46; /* Màu của thanh trượt (zinc-700) */
+  border-radius: 4px;
+  border: 1px solid #18181b; /* Tạo khoảng cách với viền */
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #52525b; /* Màu khi di chuột vào thanh trượt (zinc-600) */
+}

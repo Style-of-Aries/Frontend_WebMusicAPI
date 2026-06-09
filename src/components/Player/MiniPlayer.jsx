@@ -44,17 +44,17 @@ export default function MiniPlayer() {
           {currentSong ? (
             <div className="flex items-center gap-4">
               <img
-                src={currentSong.image}
+                src={currentSong.fileImage}
                 className={`w-14 h-14 rounded-full object-cover border-2 border-zinc-400 ${
                   isPlaying ? "animate-spin [animation-duration:8s]" : ""
                 }`}
               />
               <div>
-                <h2 className="text-sm font-bold truncate">
+                <h2 className="text-sm font-bold truncate text-white">
                   {currentSong.title}
                 </h2>
                 <p className="text-xs text-zinc-400 truncate">
-                  {currentSong.all_artist}
+                  {currentSong.artist}
                 </p>
               </div>
             </div>

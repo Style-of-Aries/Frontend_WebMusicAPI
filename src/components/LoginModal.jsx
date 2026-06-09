@@ -1,132 +1,159 @@
-import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useState, useEffect } from "react";
+import useAuth from "../hooks/useAuth";
 
 export default function LoginModal({ onClose }) {
-  const { handleLogin, handleRegister } = useAuth();
-
-  const [mode, setMode] = useState("login"); // login | register
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = async () => {
+  // Group state lại để code gọn hơn
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  // Reset error khi đổi mode
+  useEffect(() => {
     setError("");
+  }, [mode]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      setLoading(true);
-
       if (mode === "login") {
-        await handleLogin({ email, password });
-      } else {
-        if (password !== confirmPassword) {
-          setError("Mật khẩu không khớp");
-          return;
-        }
-
-        await handleRegister({
-          name,
-          email,
-          password,
-          password_confirmation: confirmPassword,
+        await login({
+          email: formData.email,
+          password: formData.password,
         });
+      } else {
+        if (mode === "register") {
+          if (formData.password !== formData.confirmPassword) {
+            setError("Mật khẩu không khớp"); // Set trực tiếp luôn
+            setLoading(false);
+            return; // Dừng lại, không chạy xuống dưới
+          }
+        }
+        await register({
+          fullName: formData.name,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        });
+        await login({ email: formData.email, password: formData.password });
       }
-
-      onClose(); // chỉ đóng khi thành công
+      // onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Có lỗi xảy ra");
+      const serverError = err.response?.data;
+
+      // Thứ tự ưu tiên hiển thị lỗi:
+      // 1. Lỗi message chung (nếu có)
+      // 2. Lỗi chi tiết (nếu có)
+      // 3. Fallback message mặc định
+      const errorMessage =
+        serverError?.message ||
+        serverError?.errors?.Password ||
+        "Có lỗi xảy ra, vui lòng thử lại sau";
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center z-50">
-      <div className="bg-zinc-900 p-8 rounded-2xl w-96 relative shadow-xl">
-
-        {/* CLOSE */}
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[1000] isolate p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-zinc-900 p-8 rounded-2xl w-full max-w-sm relative shadow-2xl border border-zinc-800"
+      >
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
         >
           ✖
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          {mode === "login" ? "🔐 Đăng nhập" : "📝 Đăng ký"}
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">
+          {mode === "login" ? "Đăng nhập" : "Đăng ký tài khoản"}
         </h2>
 
-        {/* NAME (REGISTER ONLY) */}
         {mode === "register" && (
           <input
+            name="name"
             placeholder="Họ và tên"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full mb-4 px-4 py-2 bg-zinc-800 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+            required
+            onChange={handleChange}
+            className="w-full mb-4 px-4 py-3 bg-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-white"
           />
         )}
 
-        {/* EMAIL */}
         <input
+          name="email"
+          type="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-4 py-2 bg-zinc-800 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+          required
+          onChange={handleChange}
+          className="w-full mb-4 px-4 py-3 bg-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-white"
         />
-
-        {/* PASSWORD */}
         <input
+          name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           placeholder="Mật khẩu"
-          className="w-full mb-4 px-4 py-2 bg-zinc-800 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+          required
+          onChange={handleChange}
+          className="w-full mb-4 px-4 py-3 bg-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-white"
         />
 
-        {/* CONFIRM PASSWORD (REGISTER ONLY) */}
         {mode === "register" && (
           <input
+            name="confirmPassword"
             type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Nhập lại mật khẩu"
-            className="w-full mb-4 px-4 py-2 bg-zinc-800 rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+            required
+            onChange={handleChange}
+            className="w-full mb-4 px-4 py-3 bg-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-white"
           />
         )}
 
-        {/* ERROR */}
         {error && (
-          <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
+          <p className="text-red-400 text-sm mb-4 text-center bg-red-400/10 p-2 rounded">
+            {error}
+          </p>
         )}
 
-        {/* SWITCH MODE */}
-        <p className="text-sm text-center text-gray-400 mb-4">
-          {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
-          <span
-            onClick={() =>
-              setMode(mode === "login" ? "register" : "login")
-            }
-            className="text-green-400 cursor-pointer ml-1"
-          >
-            {mode === "login" ? "Đăng ký" : "Đăng nhập"}
-          </span>
-        </p>
-
-        {/* BUTTON */}
         <button
-          onClick={onSubmit}
           disabled={loading}
-          className="w-full py-2 bg-green-500 text-black rounded-lg font-semibold hover:scale-105 transition disabled:opacity-50"
+          className="w-full py-3 bg-green-500 text-black rounded-xl font-bold hover:bg-green-400 transition disabled:opacity-50"
         >
           {loading
             ? "Đang xử lý..."
             : mode === "login"
-            ? "Đăng nhập"
-            : "Đăng ký"}
+              ? "Đăng nhập"
+              : "Đăng ký"}
         </button>
-      </div>
+
+        <p className="text-sm text-center text-gray-400 mt-4">
+          {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
+          <span
+            onClick={() => setMode(mode === "login" ? "register" : "login")}
+            className="text-green-400 cursor-pointer font-semibold"
+          >
+            {mode === "login" ? "Đăng ký ngay" : "Đăng nhập ngay"}
+          </span>
+        </p>
+      </form>
     </div>
   );
 }

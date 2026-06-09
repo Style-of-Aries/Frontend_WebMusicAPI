@@ -1,5 +1,5 @@
 const config = {
-  BASE_URL: "http://musicapi.test/api",
+  BASE_URL: "http://localhost:5200/api",
 };
 
 export default config;

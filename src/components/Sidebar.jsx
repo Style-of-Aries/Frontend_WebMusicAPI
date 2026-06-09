@@ -1,43 +1,48 @@
-export default function Sidebar({
-  songs,
-  search,
-  setSearch,
-  onSelect,
-  currentSong,
-}) {
-  const filtered = songs.filter((s) =>
-    s.title.toLowerCase().includes(search.toLowerCase()),
-  );
+// src/components/Sidebar.jsx
+import React from "react";
+import { NavLink } from "react-router-dom"; // Import NavLink
+
+const Sidebar = ({ isOpen }) => {
+  // Style dùng chung cho NavLink để giữ logic active
+  const linkClass = ({ isActive }) => 
+    `px-4 py-3 flex items-center transition-all ${
+      isActive ? "bg-gray-700 text-green-400 border-l-4 border-green-500" : "hover:bg-gray-700"
+    }`;
 
   return (
-    <div className="w-80 pb-20 bg-zinc-900 p-4 overflow-y-auto">
-      <h2 className="text-xl font-bold mb-4">🎵 Playlist</h2>
-      <div className="relative w-full">
-        <input
-          className="w-full pl-10 pr-4 py-2 rounded-full bg-zinc-800 text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
-          placeholder="Tìm bài hát..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+    <aside
+      className={`${isOpen ? "w-64" : "w-20"} h-screen bg-gray-900 text-white transition-all duration-300 flex flex-col fixed shadow-xl`}
+    >
+      <div className="p-4 text-2xl font-bold text-center border-b border-gray-700">
+        {isOpen ? "ADMIN PANEL" : "AP"}
+      </div>
 
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-          🔍
-        </span>
+      <nav className="flex-1 mt-6">
+        {/* Thay div bằng NavLink */}
+        <NavLink to="/admin/songs" className={linkClass}>
+          <span className="text-xl">🎵</span>
+          {isOpen && <span className="ml-4">Quản lý bài hát</span>}
+        </NavLink>
+
+        <NavLink to="/admin/users" className={linkClass}>
+          <span className="text-xl">👤</span>
+          {isOpen && <span className="ml-4">Quản lý người dùng</span>}
+        </NavLink>
+        <NavLink to="/" className={linkClass}>
+          <span className="text-xl">👤</span>
+          {isOpen && <span className="ml-4">Trang người dùng</span>}
+        </NavLink>
+      </nav>
+
+      <div className="mb-24 p-4 flex justify-center">
+        <button
+          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white transition-all rounded-full text-sm font-medium"
+        >
+          {isOpen ? "Logout" : "🚪"}
+        </button>
       </div>
-      <div className="space-y-2">
-        {filtered.map((song, index) => (
-          <div
-            key={song.id}
-            onClick={() => onSelect(song, index)}
-            className={`p-3 rounded-lg cursor-pointer transition
-                hover:bg-zinc-700 ${
-              currentSong?.id === song.id ? "text-green-400" : ""
-            }`}
-          >
-            🎧 {song.title}
-          </div>
-        ))}
-      </div>
-    </div>
+    </aside>
   );
-}
+};
+
+export default Sidebar;
