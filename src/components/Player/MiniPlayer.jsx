@@ -8,12 +8,12 @@ import {
   FaVolumeHigh,
   FaVolumeXmark,
 } from "react-icons/fa6";
-import usePlayerContext from "../../hooks/usePlayerContext";
+import usePlayer from "../../hooks/usePlayer";
 import VolumeControl from "./VolumeControl";
 import PlayerControl from "./PlayerControls";
 
 export default function MiniPlayer() {
-  const player = usePlayerContext();
+  const player = usePlayer();
 
   const {
     currentSong,

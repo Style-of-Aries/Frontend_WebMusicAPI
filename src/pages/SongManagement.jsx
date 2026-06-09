@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import SongModal from "../components/SongModal";
-import usePlayerContext from "../hooks/usePlayerContext";
+import usePlayer from "../hooks/usePlayer";
 import ListSong from "../components/Admin/Song/List"; // Component chứa bảng của bạn
 // import { getSongs } from "../api";
 
 export default function SongManagement() {
-  const player = usePlayerContext();
+  const player = usePlayer();
   // const [songs, setSongs] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);

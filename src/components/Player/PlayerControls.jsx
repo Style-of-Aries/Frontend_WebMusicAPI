@@ -6,7 +6,7 @@ import {
   FaRepeat,
   FaShuffle,
 } from "react-icons/fa6";
-import usePlayerContext from "../../hooks/usePlayerContext";
+import usePlayer from "../../hooks/usePlayer";
 
 export default function PlayerControl() {
   const {
@@ -24,7 +24,7 @@ export default function PlayerControl() {
     setIsShuffle,
     seek,
     formatTime,
-  } = usePlayerContext();
+  } = usePlayer();
 
   return (
     <div className="flex flex-col items-center">
